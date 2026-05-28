@@ -1,22 +1,24 @@
-import { createMcpHandler } from 'mcp-handler'
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { registerAll } from '../src/registerAll.js'
 
-const handler = createMcpHandler(
-    (server) => {
-        registerAll(server)
-    },
-    {
-        serverInfo: {
-            name: 'my-mcp-server',
-            version: '1.0.0'
-        }
-    },
-    {
-        basePath: '/api',
-        maxDuration: 60,
-        verboseLogs: false
-    }
-)
+export default async function handler(req: Request): Promise<Response> {
+    const server = new McpServer({
+        name: 'my-mcp-server',
+        version: '1.0.0'
+    })
 
-export { handler as GET, handler as POST, handler as DELETE }
-export default handler
+    registerAll(server)
+
+    const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: undefined
+    })
+
+    await server.connect(transport)
+
+    return transport.handleRequest(req)
+}
+
+export const GET = handler
+export const POST = handler
+export const DELETE = handler
