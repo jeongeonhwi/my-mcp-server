@@ -1,8 +1,9 @@
+import type { IncomingMessage, ServerResponse } from 'node:http'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { registerAll } from '../src/registerAll.js'
 
-export default async function handler(req: Request): Promise<Response> {
+export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const server = new McpServer({
         name: 'my-mcp-server',
         version: '1.0.0'
@@ -16,9 +17,12 @@ export default async function handler(req: Request): Promise<Response> {
 
     await server.connect(transport)
 
-    return transport.handleRequest(req)
-}
+    const chunks: Buffer[] = []
+    for await (const chunk of req) {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+    }
+    const rawBody = Buffer.concat(chunks).toString('utf-8')
+    const parsedBody = rawBody ? JSON.parse(rawBody) : undefined
 
-export const GET = handler
-export const POST = handler
-export const DELETE = handler
+    await transport.handleRequest(req, res, parsedBody)
+}
