@@ -143,3 +143,9 @@ vite.config.ts.timestamp-*
 build/
 
 .cursor/mcp.json
+
+# Vercel
+.vercel/
+.env.local
+.env*.local
+.vercel
